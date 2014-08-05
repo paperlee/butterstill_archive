@@ -49,5 +49,6 @@
 
 @interface AVCamViewController : UIViewController
 @property (weak, nonatomic) IBOutlet UIImageView *holdImage;
+@property (weak, nonatomic) IBOutlet UIView *soundWaveView;
 
 @end

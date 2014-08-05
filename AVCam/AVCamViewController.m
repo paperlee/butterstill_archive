@@ -63,10 +63,12 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 @property (nonatomic, weak) IBOutlet UIButton *recordButton;
 @property (nonatomic, weak) IBOutlet UIButton *cameraButton;
 @property (nonatomic, weak) IBOutlet UIButton *stillButton;
+@property (weak, nonatomic) IBOutlet UIView *soundwaves;
 
 - (IBAction)toggleMovieRecording:(id)sender;
 - (IBAction)changeCamera:(id)sender;
 - (IBAction)snapStillImage:(id)sender;
+- (IBAction)snapStillImageEnd:(id)sender;
 - (IBAction)focusAndExposeTap:(UIGestureRecognizer *)gestureRecognizer;
 
 // Session management.
@@ -75,6 +77,9 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 @property (nonatomic) AVCaptureDeviceInput *videoDeviceInput;
 @property (nonatomic) AVCaptureMovieFileOutput *movieFileOutput;
 @property (nonatomic) AVCaptureStillImageOutput *stillImageOutput;
+
+@property (nonatomic) AVAudioRecorder *audioRecorder;
+@property (nonatomic) AVAudioPlayer *audioPlayer;
 
 // Utilities.
 @property (nonatomic) UIBackgroundTaskIdentifier backgroundRecordingID;
@@ -176,6 +181,19 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 			[self setStillImageOutput:stillImageOutput];
 		}
 	});
+    
+    //UIView *soundwaves = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 102)];
+    //[self.soundwaves setBackgroundColor:[UIColor clearColor]];
+    int RN[100];
+    for(int n = 0; n <= 100; n = n + 1){
+        RN[n] = 20+rand()%80;
+        NSLog(@"height is %i, %d",RN[n],rand()/RAND_MAX);
+        UIView *tempbar = [[UIView alloc] initWithFrame:CGRectMake(-n*22, 102-RN[n], 20, RN[n])];
+        [tempbar setBackgroundColor:[UIColor colorWithRed:1.0f green:0.2f blue:0.1f alpha:0.6f]];
+        [self.soundwaves addSubview:tempbar];
+        
+    }
+    //[self.soundWaveView addSubview:soundwaves];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -397,6 +415,15 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 				[[[ALAssetsLibrary alloc] init] writeImageToSavedPhotosAlbum:[image CGImage] orientation:(ALAssetOrientation)[image imageOrientation] completionBlock:nil];
                 [self.holdImage setHidden:NO];
                 [self.holdImage setImage:image];
+                
+                [self.soundWaveView setHidden:NO];
+                
+                [UIView animateWithDuration:30.0 delay:0.0 options:UIViewAnimationOptionCurveLinear animations:^{
+                    self.soundwaves.frame = CGRectMake(22*100, self.soundwaves.frame.origin.y, self.soundwaves.frame.size.width, self.soundwaves.frame.size.height);
+                } completion:^(BOOL finished){
+                    
+                }];
+                
                 //UIImageView *holdImage = [[UIImageView alloc] initWithImage:image];
                 //holdImage.contentMode = UIViewContentModeScaleAspectFit;
                 //CGRect screenRect = [[UIScreen mainScreen] bounds];
@@ -406,6 +433,17 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 			}
 		}];
 	});
+}
+
+- (IBAction)snapStillImageEnd:(id)sender
+{
+    [self.soundWaveView setHidden:YES];
+    [self.soundwaves setFrame:CGRectMake(0, self.soundwaves.frame.origin.y, self.soundwaves.frame.size.width, self.soundwaves.frame.size.height)];
+    [self.holdImage setHidden:YES];
+    dispatch_async([self sessionQueue], ^{
+        
+    });
+    
 }
 
 - (IBAction)focusAndExposeTap:(UIGestureRecognizer *)gestureRecognizer
