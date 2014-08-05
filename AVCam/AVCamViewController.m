@@ -52,11 +52,14 @@
 
 #import "AVCamPreviewView.h"
 
+#import "EZMicrophone.h"
+#import "EZAudioPlot.h"
+
 static void * CapturingStillImageContext = &CapturingStillImageContext;
 static void * RecordingContext = &RecordingContext;
 static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDeviceAuthorizedContext;
 
-@interface AVCamViewController () <AVCaptureFileOutputRecordingDelegate>
+@interface AVCamViewController () <AVCaptureFileOutputRecordingDelegate, EZMicrophoneDelegate>
 
 // For use in the storyboards.
 @property (nonatomic, weak) IBOutlet AVCamPreviewView *previewView;
@@ -81,12 +84,15 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 @property (nonatomic) AVAudioRecorder *audioRecorder;
 @property (nonatomic) AVAudioPlayer *audioPlayer;
 
+@property (nonatomic,strong) EZMicrophone *microphone;
+
 // Utilities.
 @property (nonatomic) UIBackgroundTaskIdentifier backgroundRecordingID;
 @property (nonatomic, getter = isDeviceAuthorized) BOOL deviceAuthorized;
 @property (nonatomic, readonly, getter = isSessionRunningAndDeviceAuthorized) BOOL sessionRunningAndDeviceAuthorized;
 @property (nonatomic) BOOL lockInterfaceRotation;
 @property (nonatomic) id runtimeErrorHandlingObserver;
+@property (nonatomic) EZPlot *audioPlot;
 
 @end
 
@@ -106,6 +112,20 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 {
 	[super viewDidLoad];
 	
+    self.microphone = [EZMicrophone microphoneWithDelegate:self];
+    
+    self.audioPlot = [[EZAudioPlot alloc] initWithFrame:self.soundWaveView.frame];
+    self.audioPlot.clipsToBounds = NO;
+    [self.view addSubview:self.audioPlot];
+    self.audioPlot.opaque = NO;
+    self.audioPlot.backgroundColor = [UIColor colorWithRed:0.816 green:0.249 blue:0.255 alpha:0];
+    self.audioPlot.color = [UIColor colorWithRed:0.9 green:0.12 blue:0.13 alpha:0.4];
+    self.audioPlot.plotType = EZPlotTypeRolling;
+    self.audioPlot.shouldFill = YES;
+    self.audioPlot.shouldMirror = YES;
+    self.audioPlot.hidden = YES;
+    self.audioPlot.gain = 32;
+    
 	// Create the AVCaptureSession
 	AVCaptureSession *session = [[AVCaptureSession alloc] init];
 	[self setSession:session];
@@ -398,7 +418,24 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 
 - (IBAction)snapStillImage:(id)sender
 {
+    
     [self.soundWaveView setHidden:NO];
+    
+    [self.microphone startFetchingAudio];
+    
+    self.audioPlot = [[EZAudioPlot alloc] initWithFrame:self.soundWaveView.frame];
+    self.audioPlot.clipsToBounds = NO;
+    [self.view addSubview:self.audioPlot];
+    self.audioPlot.opaque = NO;
+    self.audioPlot.backgroundColor = [UIColor colorWithRed:0.816 green:0.249 blue:0.255 alpha:0];
+    self.audioPlot.color = [UIColor colorWithRed:0.9 green:0.12 blue:0.13 alpha:0.6];
+    self.audioPlot.plotType = EZPlotTypeRolling;
+    self.audioPlot.shouldFill = YES;
+    self.audioPlot.shouldMirror = YES;
+    self.audioPlot.hidden = YES;
+    self.audioPlot.gain = 32;
+    [self.audioPlot setHidden:NO];
+    
 	dispatch_async([self sessionQueue], ^{
 		// Update the orientation on the still image output video connection before capturing.
 		[[[self stillImageOutput] connectionWithMediaType:AVMediaTypeVideo] setVideoOrientation:[[(AVCaptureVideoPreviewLayer *)[[self previewView] layer] connection] videoOrientation]];
@@ -419,11 +456,11 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
                 
                 
                 
-                [UIView animateWithDuration:30.0 delay:0.0 options:UIViewAnimationOptionCurveLinear animations:^{
+                /*[UIView animateWithDuration:30.0 delay:0.0 options:UIViewAnimationOptionCurveLinear animations:^{
                     self.soundwaves.frame = CGRectMake(22*100, self.soundwaves.frame.origin.y, self.soundwaves.frame.size.width, self.soundwaves.frame.size.height);
                 } completion:^(BOOL finished){
                     
-                }];
+                }];*/
                 
                 //UIImageView *holdImage = [[UIImageView alloc] initWithImage:image];
                 //holdImage.contentMode = UIViewContentModeScaleAspectFit;
@@ -439,8 +476,11 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 - (IBAction)snapStillImageEnd:(id)sender
 {
     [self.soundWaveView setHidden:YES];
+    [self.audioPlot setHidden:YES];
     [self.soundwaves setFrame:CGRectMake(0, self.soundwaves.frame.origin.y, self.soundwaves.frame.size.width, self.soundwaves.frame.size.height)];
     [self.holdImage setHidden:YES];
+    
+    [self.microphone stopFetchingAudio];
     dispatch_async([self sessionQueue], ^{
         
     });
@@ -544,6 +584,12 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 	}
 	
 	return captureDevice;
+}
+
+-(void) microphone:(EZMicrophone *)microphone hasAudioReceived:(float **)buffer withBufferSize:(UInt32)bufferSize withNumberOfChannels:(UInt32)numberOfChannels {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.audioPlot updateBuffer:buffer[0] withBufferSize:bufferSize];
+    });
 }
 
 #pragma mark UI
