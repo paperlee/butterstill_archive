@@ -52,10 +52,11 @@
                                         <state key="normal" title="Tap and Hold">
                                             <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
                                         </state>
+                                        <state key="highlighted" title="Hold on!"/>
                                         <connections>
                                             <action selector="snapStillImage:" destination="vXZ-lx-hvc" eventType="touchDown" id="53O-8J-mgg"/>
-                                            <action selector="snapStillImageEnd:" destination="vXZ-lx-hvc" eventType="touchUpInside" id="DId-ux-tCV"/>
-                                            <action selector="snapStillImageEnd:" destination="vXZ-lx-hvc" eventType="touchUpOutside" id="hGt-tm-l8m"/>
+                                            <action selector="snapStillImageEnd:" destination="vXZ-lx-hvc" eventType="touchUpInside" id="nVF-Go-fio"/>
+                                            <action selector="snapStillImageEnd:" destination="vXZ-lx-hvc" eventType="touchUpOutside" id="tWU-xN-WDO"/>
                                         </connections>
                                     </button>
                                     <button hidden="YES" opaque="NO" contentMode="scaleToFill" enabled="NO" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="f4y-iM-g40">

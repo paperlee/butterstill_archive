@@ -7,3 +7,20 @@
 # Pods/
 
 *.DS_Store
+
+# Xcode
+build/*
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xcworkspace
+*.xcworkspacedata
+project.xcworkspace/
+xcuserdata/
+
+# OS X
+.DS_Store
+
+#Git
+.gitattributes

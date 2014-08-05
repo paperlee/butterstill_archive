@@ -188,7 +188,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     for(int n = 0; n <= 100; n = n + 1){
         RN[n] = 20+rand()%80;
         NSLog(@"height is %i, %d",RN[n],rand()/RAND_MAX);
-        UIView *tempbar = [[UIView alloc] initWithFrame:CGRectMake(-n*22, 102-RN[n], 20, RN[n])];
+        UIView *tempbar = [[UIView alloc] initWithFrame:CGRectMake(-(n+1)*22, 102-RN[n], 20, RN[n])];
         [tempbar setBackgroundColor:[UIColor colorWithRed:1.0f green:0.2f blue:0.1f alpha:0.6f]];
         [self.soundwaves addSubview:tempbar];
         
@@ -398,6 +398,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 
 - (IBAction)snapStillImage:(id)sender
 {
+    [self.soundWaveView setHidden:NO];
 	dispatch_async([self sessionQueue], ^{
 		// Update the orientation on the still image output video connection before capturing.
 		[[[self stillImageOutput] connectionWithMediaType:AVMediaTypeVideo] setVideoOrientation:[[(AVCaptureVideoPreviewLayer *)[[self previewView] layer] connection] videoOrientation]];
@@ -416,7 +417,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
                 [self.holdImage setHidden:NO];
                 [self.holdImage setImage:image];
                 
-                [self.soundWaveView setHidden:NO];
+                
                 
                 [UIView animateWithDuration:30.0 delay:0.0 options:UIViewAnimationOptionCurveLinear animations:^{
                     self.soundwaves.frame = CGRectMake(22*100, self.soundwaves.frame.origin.y, self.soundwaves.frame.size.width, self.soundwaves.frame.size.height);
