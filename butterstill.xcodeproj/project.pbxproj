@@ -137,7 +137,7 @@
 				ORGANIZATIONNAME = paperworkStudio;
 				TargetAttributes = {
 					2F360BA117692C4700D9A404 = {
-						DevelopmentTeam = YSV4B5LWZ9;
+						DevelopmentTeam = 6ABD535R9B;
 						SystemCapabilities = {
 							com.apple.InterAppAudio = {
 								enabled = 0;
