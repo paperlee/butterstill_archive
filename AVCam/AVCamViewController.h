@@ -47,6 +47,8 @@
 
 #import <UIKit/UIKit.h>
 
+#define kAudioFilePath @"EZAudioTest.m4a"
+
 @interface AVCamViewController : UIViewController
 @property (weak, nonatomic) IBOutlet UIImageView *holdImage;
 @property (weak, nonatomic) IBOutlet UIView *soundWaveView;
