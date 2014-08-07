@@ -67,12 +67,14 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 @property (nonatomic, weak) IBOutlet UIButton *cameraButton;
 @property (nonatomic, weak) IBOutlet UIButton *stillButton;
 @property (weak, nonatomic) IBOutlet UIView *soundwaves;
+@property (weak, nonatomic) IBOutlet UIButton *replayButton;
 
 - (IBAction)toggleMovieRecording:(id)sender;
 - (IBAction)changeCamera:(id)sender;
 - (IBAction)snapStillImage:(id)sender;
 - (IBAction)snapStillImageEnd:(id)sender;
 - (IBAction)focusAndExposeTap:(UIGestureRecognizer *)gestureRecognizer;
+- (IBAction)replaySound:(id)sender;
 
 // Session management.
 @property (nonatomic) dispatch_queue_t sessionQueue; // Communicate with the session and other session objects on this queue.
@@ -124,7 +126,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     self.audioPlot.shouldFill = YES;
     self.audioPlot.shouldMirror = YES;
     self.audioPlot.hidden = YES;
-    self.audioPlot.gain = 32;
+    self.audioPlot.gain = 3;
     
 	// Create the AVCaptureSession
 	AVCaptureSession *session = [[AVCaptureSession alloc] init];
@@ -433,7 +435,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     self.audioPlot.shouldFill = YES;
     self.audioPlot.shouldMirror = YES;
     self.audioPlot.hidden = YES;
-    self.audioPlot.gain = 32;
+    self.audioPlot.gain = 3;
     [self.audioPlot setHidden:NO];
     
 	dispatch_async([self sessionQueue], ^{
@@ -481,9 +483,12 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     [self.holdImage setHidden:YES];
     
     [self.microphone stopFetchingAudio];
-    dispatch_async([self sessionQueue], ^{
+    
+    [self.replayButton setEnabled:YES];
+    /*dispatch_async([self sessionQueue], ^{
         
-    });
+    });*/
+    
     
 }
 
@@ -491,6 +496,10 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 {
 	CGPoint devicePoint = [(AVCaptureVideoPreviewLayer *)[[self previewView] layer] captureDevicePointOfInterestForPoint:[gestureRecognizer locationInView:[gestureRecognizer view]]];
 	[self focusWithMode:AVCaptureFocusModeAutoFocus exposeWithMode:AVCaptureExposureModeAutoExpose atDevicePoint:devicePoint monitorSubjectAreaChange:YES];
+}
+
+- (IBAction)replaySound:(id)sender {
+    self.audioPlayer = [AVAudioPlayer alloc] initWithContentsOfURL:[self pa] error:<#(NSError *__autoreleasing *)#>
 }
 
 - (void)subjectAreaDidChange:(NSNotification *)notification
