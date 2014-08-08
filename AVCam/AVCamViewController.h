@@ -53,4 +53,6 @@
 @property (weak, nonatomic) IBOutlet UIImageView *holdImage;
 @property (weak, nonatomic) IBOutlet UIView *soundWaveView;
 
+@property (nonatomic,assign) BOOL isRecording;
+
 @end

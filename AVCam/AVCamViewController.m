@@ -69,6 +69,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 @property (nonatomic, weak) IBOutlet UIButton *stillButton;
 @property (weak, nonatomic) IBOutlet UIView *soundwaves;
 @property (weak, nonatomic) IBOutlet UIButton *replayButton;
+@property (weak, nonatomic) IBOutlet UIButton *retakeButton;
 
 - (IBAction)toggleMovieRecording:(id)sender;
 - (IBAction)changeCamera:(id)sender;
@@ -76,6 +77,9 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 - (IBAction)snapStillImageEnd:(id)sender;
 - (IBAction)focusAndExposeTap:(UIGestureRecognizer *)gestureRecognizer;
 - (IBAction)replaySound:(id)sender;
+- (IBAction)reTake:(UIButton *)sender;
+- (IBAction)stillButtonTouchDragExitAction:(id)sender;
+- (IBAction)stillButtonTouchDragOutside:(id)sender;
 
 // Session management.
 @property (nonatomic) dispatch_queue_t sessionQueue; // Communicate with the session and other session objects on this queue.
@@ -140,6 +144,8 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 	// Check for device authorization
 	[self checkDeviceAuthorizationStatus];
 	
+    
+    
 	// In general it is not safe to mutate an AVCaptureSession or any of its inputs, outputs, or connections from multiple threads at the same time.
 	// Why not do all of this on the main queue?
 	// -[AVCaptureSession startRunning] is a blocking call which can take a long time. We dispatch session setup to the sessionQueue so that the main queue isn't blocked (which keeps the UI responsive).
@@ -440,7 +446,6 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     self.audioPlot.gain = 3;
     [self.audioPlot setHidden:NO];
     
-    self.recorder = [EZRecorder recorderWithDestinationURL:[self audioFilePathURL] sourceFormat:self.microphone.audioStreamBasicDescription destinationFileType:EZRecorderFileTypeM4A];
     
     
 	dispatch_async([self sessionQueue], ^{
@@ -461,7 +466,10 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
                 [self.holdImage setHidden:NO];
                 [self.holdImage setImage:image];
                 
+                // Record sound after taking picture
+                self.recorder = [EZRecorder recorderWithDestinationURL:[self audioFilePathURL] sourceFormat:self.microphone.audioStreamBasicDescription destinationFileType:EZRecorderFileTypeM4A];
                 
+                self.isRecording = YES;
                 
                 /*[UIView animateWithDuration:30.0 delay:0.0 options:UIViewAnimationOptionCurveLinear animations:^{
                     self.soundwaves.frame = CGRectMake(22*100, self.soundwaves.frame.origin.y, self.soundwaves.frame.size.width, self.soundwaves.frame.size.height);
@@ -477,19 +485,29 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
                 
 			}
 		}];
+        
+        
 	});
 }
 
 - (IBAction)snapStillImageEnd:(id)sender
 {
+    
     [self.soundWaveView setHidden:YES];
     [self.audioPlot setHidden:YES];
     [self.soundwaves setFrame:CGRectMake(0, self.soundwaves.frame.origin.y, self.soundwaves.frame.size.width, self.soundwaves.frame.size.height)];
-    [self.holdImage setHidden:YES];
+    //[self.holdImage setHidden:YES];
+    
+    [self.stillButton setHidden:YES];
+    [self.retakeButton setHidden:NO];
+    
+    if (self.recorder && self.isRecording){
+        [self.recorder closeAudioFile];
+    }
     
     [self.microphone stopFetchingAudio];
-    [self.recorder closeAudioFile];
     
+    self.isRecording = NO;
     
     [self.replayButton setEnabled:YES];
     
@@ -507,13 +525,46 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 }
 
 - (IBAction)replaySound:(id)sender {
-    NSLog(@"Play sound just record");
+    if (self.audioPlayer){
+        if (self.audioPlayer.playing){
+            [self.audioPlayer stop];
+        }
+        self.audioPlayer = nil;
+    }
+    
+    NSLog(@"Play sound just recorded");
     NSError *err;
     self.audioPlayer = [[AVAudioPlayer alloc] initWithContentsOfURL:[self audioFilePathURL] error:&err];
+    
+    if (err){
+        NSLog(@"Replay sound error:%@",err);
+    }
+    
     [self.audioPlayer play];
     self.audioPlayer.delegate = self;
     
     
+}
+
+- (IBAction)reTake:(UIButton *)sender {
+    [self.holdImage setHidden:YES];
+    if (self.audioPlayer && self.audioPlayer.isPlaying){
+        [self.audioPlayer stop];
+    }
+    self.audioPlayer = nil;
+    
+    [self.retakeButton setHidden:YES];
+    [self.stillButton setHidden:NO];
+    [self.replayButton setEnabled:NO];
+    
+}
+
+- (IBAction)stillButtonTouchDragExitAction:(id)sender {
+    NSLog(@"Drag Exit Event");
+}
+
+- (IBAction)stillButtonTouchDragOutside:(id)sender {
+    NSLog(@"Touch Drag Outside Event");
 }
 
 - (void)subjectAreaDidChange:(NSNotification *)notification
@@ -615,6 +666,12 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     });
 }
 
+-(void)microphone:(EZMicrophone *)microphone hasBufferList:(AudioBufferList *)bufferList withBufferSize:(UInt32)bufferSize withNumberOfChannels:(UInt32)numberOfChannels{
+    if ( self.isRecording ){
+        [self.recorder appendDataFromBufferList:bufferList withBufferSize:bufferSize];
+    }
+}
+
 #pragma mark UI
 
 - (void)runStillImageCaptureAnimation
@@ -650,6 +707,12 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 			});
 		}
 	}];
+}
+
+#pragma mark - AVAudioPlayerDelegate
+-(void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player successfully:(BOOL)flag{
+    self.audioPlayer = nil;
+    
 }
 
 #pragma mark - Utility

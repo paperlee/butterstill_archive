@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="5056" systemVersion="13E28" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" initialViewController="vXZ-lx-hvc">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="5056" systemVersion="13D65" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" initialViewController="vXZ-lx-hvc">
     <dependencies>
         <development version="5000" identifier="xcode"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="3733"/>
@@ -46,7 +46,7 @@
                                             <action selector="toggleMovieRecording:" destination="vXZ-lx-hvc" eventType="touchUpInside" id="2wa-Oy-RfQ"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" enabled="NO" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="JI8-7Z-lWW">
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="JI8-7Z-lWW">
                                         <rect key="frame" x="102" y="516" width="117" height="30"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="0.29999999999999999" colorSpace="calibratedRGB"/>
@@ -62,6 +62,8 @@
                                             <action selector="snapStillImage:" destination="vXZ-lx-hvc" eventType="touchDown" id="53O-8J-mgg"/>
                                             <action selector="snapStillImageEnd:" destination="vXZ-lx-hvc" eventType="touchUpInside" id="nVF-Go-fio"/>
                                             <action selector="snapStillImageEnd:" destination="vXZ-lx-hvc" eventType="touchUpOutside" id="tWU-xN-WDO"/>
+                                            <action selector="stillButtonTouchDragExitAction:" destination="vXZ-lx-hvc" eventType="touchDragExit" id="oS2-w7-Sed"/>
+                                            <action selector="stillButtonTouchDragOutside:" destination="vXZ-lx-hvc" eventType="touchDragOutside" id="2ZC-L5-5va"/>
                                         </connections>
                                     </button>
                                     <button hidden="YES" opaque="NO" contentMode="scaleToFill" enabled="NO" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="f4y-iM-g40">
@@ -88,6 +90,17 @@
                                         </state>
                                         <connections>
                                             <action selector="replaySound:" destination="vXZ-lx-hvc" eventType="touchUpInside" id="oQl-sm-EXw"/>
+                                        </connections>
+                                    </button>
+                                    <button hidden="YES" opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Eq9-77-hPb">
+                                        <rect key="frame" x="124" y="516" width="72" height="30"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="18"/>
+                                        <state key="normal" title="Retake">
+                                            <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                                        </state>
+                                        <connections>
+                                            <action selector="reTake:" destination="vXZ-lx-hvc" eventType="touchUpInside" id="Cww-BT-2jT"/>
                                         </connections>
                                     </button>
                                 </subviews>
@@ -133,6 +146,7 @@
                         <outlet property="previewView" destination="sVI-mX-69Q" id="UGh-um-teZ"/>
                         <outlet property="recordButton" destination="ghq-cJ-efm" id="Tcb-VB-crw"/>
                         <outlet property="replayButton" destination="BX9-SF-rNv" id="S2L-FS-FP3"/>
+                        <outlet property="retakeButton" destination="Eq9-77-hPb" id="TWW-Oy-GAX"/>
                         <outlet property="soundWaveView" destination="wkR-82-xIE" id="rFK-uL-XE8"/>
                         <outlet property="stillButton" destination="JI8-7Z-lWW" id="oT3-f6-Uvt"/>
                     </connections>
