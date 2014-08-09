@@ -60,7 +60,10 @@ static void * CapturingStillImageContext = &CapturingStillImageContext;
 static void * RecordingContext = &RecordingContext;
 static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDeviceAuthorizedContext;
 
-@interface AVCamViewController () <AVCaptureFileOutputRecordingDelegate, AVAudioPlayerDelegate, EZMicrophoneDelegate>
+@interface AVCamViewController () <AVCaptureFileOutputRecordingDelegate, AVAudioPlayerDelegate, AVAudioRecorderDelegate>{
+    AVAudioRecorder *audioRecorder;
+    AVAudioPlayer *audioPlayer;
+}
 
 // For use in the storyboards.
 @property (nonatomic, weak) IBOutlet AVCamPreviewView *previewView;
@@ -87,11 +90,8 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 @property (nonatomic) AVCaptureMovieFileOutput *movieFileOutput;
 @property (nonatomic) AVCaptureStillImageOutput *stillImageOutput;
 
-@property (nonatomic) AVAudioRecorder *audioRecorder;
-@property (nonatomic) AVAudioPlayer *audioPlayer;
-
-@property (nonatomic,strong) EZMicrophone *microphone;
-@property (nonatomic,strong) EZRecorder *recorder;
+//@property (nonatomic,strong) EZMicrophone *microphone;
+//@property (nonatomic,strong) EZRecorder *recorder;
 
 // Utilities.
 @property (nonatomic) UIBackgroundTaskIdentifier backgroundRecordingID;
@@ -99,7 +99,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 @property (nonatomic, readonly, getter = isSessionRunningAndDeviceAuthorized) BOOL sessionRunningAndDeviceAuthorized;
 @property (nonatomic) BOOL lockInterfaceRotation;
 @property (nonatomic) id runtimeErrorHandlingObserver;
-@property (nonatomic,strong) EZPlot *audioPlot;
+//@property (nonatomic,strong) EZPlot *audioPlot;
 
 @end
 
@@ -147,7 +147,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 {
 	[super viewDidLoad];
 	
-    self.microphone = [EZMicrophone microphoneWithDelegate:self];
+    /*self.microphone = [EZMicrophone microphoneWithDelegate:self];
     
     self.audioPlot = [[EZAudioPlot alloc] initWithFrame:self.soundWaveView.frame];
     self.audioPlot.clipsToBounds = NO;
@@ -160,7 +160,10 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     self.audioPlot.shouldMirror = YES;
     self.audioPlot.hidden = YES;
     self.audioPlot.gain = 3;
-    self.audioPlot.userInteractionEnabled = NO;
+    self.audioPlot.userInteractionEnabled = NO;*/
+    
+    
+    
     
 	// Create the AVCaptureSession
 	AVCaptureSession *session = [[AVCaptureSession alloc] init];
@@ -205,6 +208,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 				// Note: As an exception to the above rule, it is not necessary to serialize video orientation changes on the AVCaptureVideoPreviewLayer’s connection with other session manipulation.
   
 				[[(AVCaptureVideoPreviewLayer *)[[self previewView] layer] connection] setVideoOrientation:(AVCaptureVideoOrientation)[self interfaceOrientation]];
+                
 			});
 		}
 		
@@ -252,6 +256,37 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
         
     }*/
     //[self.soundWaveView addSubview:soundwaves];
+    
+    //Set the audio file
+    NSArray *pathComponents = [NSArray arrayWithObjects:[NSSearchPathForDirectoriesInDomains(NSDocumentationDirectory, NSUserDomainMask, YES) lastObject], kAudioFilePath, nil];
+    
+    NSURL *outputFileURL = [NSURL fileURLWithPathComponents:pathComponents];
+    
+    //Setup audio session
+    AVAudioSession *audioSession = [AVAudioSession sharedInstance];
+    NSError *error = nil;
+    [audioSession setCategory:AVAudioSessionCategoryPlayAndRecord error:&error];
+    if (error){
+        NSLog(@"Fail to create audio session: %@",error);
+    }
+    
+    //Define the recording settings
+    NSMutableDictionary *recordSetting = [[NSMutableDictionary alloc] init];
+    
+    [recordSetting setValue:[NSNumber numberWithInt:kAudioFormatMPEG4AAC] forKey:AVFormatIDKey];
+    [recordSetting setValue:[NSNumber numberWithFloat:44100.0] forKey:AVSampleRateKey];
+    [recordSetting setValue:[NSNumber numberWithInt:2] forKey:AVNumberOfChannelsKey];
+    
+    // Initiate and prepare the recorder
+    NSError *errorInitRecorder = nil;
+    audioRecorder = [[AVAudioRecorder alloc] initWithURL:outputFileURL settings:recordSetting error:&errorInitRecorder];
+    if (errorInitRecorder){
+        NSLog(@"Error to init the recorder: %@",error);
+    } else {
+        audioRecorder.delegate = self;
+        audioRecorder.meteringEnabled = YES;
+        [audioRecorder prepareToRecord];
+    }
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -459,7 +494,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     
     //[self.soundWaveView setHidden:NO];
     
-    [self.microphone startFetchingAudio];
+    /*[self.microphone startFetchingAudio];
     
     self.audioPlot = [[EZAudioPlot alloc] initWithFrame:self.soundWaveView.frame];
     self.audioPlot.clipsToBounds = NO;
@@ -486,7 +521,24 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     // Record sound
     self.recorder = [EZRecorder recorderWithDestinationURL:[self audioFilePathURL] sourceFormat:self.microphone.audioStreamBasicDescription destinationFileType:EZRecorderFileTypeM4A];
     
-    self.isRecording = YES;
+    self.isRecording = YES;*/
+    
+    if (audioPlayer.playing){
+        [audioPlayer stop];
+    }
+    
+    if (!audioRecorder.recording){
+        AVAudioSession *session = [AVAudioSession sharedInstance];
+        NSError *error = nil;
+        [session setActive:YES error:&error];
+        
+        if (error){
+            NSLog(@"Error to active session: %@",error);
+        }
+        
+        //Start recording
+        [audioRecorder record];
+    }
     
 	dispatch_async([self sessionQueue], ^{
 		// Update the orientation on the still image output video connection before capturing.
@@ -537,19 +589,28 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     //[self.soundwaves setFrame:CGRectMake(0, self.soundwaves.frame.origin.y, self.soundwaves.frame.size.width, self.soundwaves.frame.size.height)];
     //[self.holdImage setHidden:YES];
     
+    //Stop recording
+    [audioRecorder stop];
+    AVAudioSession *audioSession = [AVAudioSession sharedInstance];
+    NSError *error = nil;
+    [audioSession setActive:NO error:&error];
+    if (error){
+        NSLog(@"Error to inactive session: %@",error);
+    }
+    
+    //Set up UI
     [self.stillButton setHidden:YES];
     [self.retakeButton setHidden:NO];
+    [self.replayButton setEnabled:YES];
     
-    if (self.recorder && self.isRecording){
+    /*if (self.recorder && self.isRecording){
         NSLog(@"Closing the audio file");
         [self.recorder closeAudioFile];
     }
     
     [self.microphone stopFetchingAudio];
     
-    self.isRecording = NO;
-    
-    [self.replayButton setEnabled:YES];
+    self.isRecording = NO;*/
     
     /*dispatch_async([self sessionQueue], ^{
         
@@ -565,7 +626,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 }
 
 - (IBAction)replaySound:(id)sender {
-    if (self.audioPlayer){
+    /*if (self.audioPlayer){
         if (self.audioPlayer.playing){
             [self.audioPlayer stop];
         }
@@ -581,14 +642,22 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     }
     
     [self.audioPlayer play];
-    self.audioPlayer.delegate = self;
+    self.audioPlayer.delegate = self;*/
+    NSLog(@"Play sound!");
+    NSLog(@"%hhd",[[NSFileManager defaultManager] fileExistsAtPath:audioRecorder.url.path]);
+        if (!audioRecorder.recording){
+            NSError *error = nil;
+            audioPlayer = [[AVAudioPlayer alloc] initWithContentsOfURL:audioRecorder.url error:&error];
+            [audioPlayer setDelegate:self];
+            [audioPlayer play];
+        }
     
     
 }
 
 - (IBAction)reTake:(UIButton *)sender {
     [self.holdImage setHidden:YES];
-    [self.audioPlot setHidden:YES];
+    /*[self.audioPlot setHidden:YES];
     
     NSError *error = nil;
     [[NSFileManager defaultManager] removeItemAtURL:[self audioFilePathURL] error:&error];
@@ -606,7 +675,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     
     if (self.recorder){
         self.recorder = nil;
-    }
+    }*/
     
     [self.retakeButton setHidden:YES];
     [self.stillButton setHidden:NO];
@@ -715,7 +784,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 	return captureDevice;
 }
 
--(void) microphone:(EZMicrophone *)microphone hasAudioReceived:(float **)buffer withBufferSize:(UInt32)bufferSize withNumberOfChannels:(UInt32)numberOfChannels {
+/*-(void) microphone:(EZMicrophone *)microphone hasAudioReceived:(float **)buffer withBufferSize:(UInt32)bufferSize withNumberOfChannels:(UInt32)numberOfChannels {
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.audioPlot updateBuffer:buffer[0] withBufferSize:bufferSize];
     });
@@ -725,6 +794,18 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     if ( self.isRecording ){
         [self.recorder appendDataFromBufferList:bufferList withBufferSize:bufferSize];
     }
+}*/
+
+#pragma mark AVAudioRecorderDelegate
+- (void)audioRecorderDidFinishRecording:(AVAudioRecorder *)recorder successfully:(BOOL)flag{
+    // End of recording
+    NSLog(@"Finished recording");
+}
+
+#pragma mark AVAudioRlayerDelegate
+- (void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player successfully:(BOOL)flag{
+    // Finish playing
+    NSLog(@"Finish playing");
 }
 
 #pragma mark UI
@@ -764,8 +845,10 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 	}];
 }
 
+
+
 #pragma mark - AVAudioPlayerDelegate
--(void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player successfully:(BOOL)flag{
+/*-(void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player successfully:(BOOL)flag{
     self.audioPlayer = nil;
     
 }
@@ -786,6 +869,6 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     return [NSURL fileURLWithPath:[NSString stringWithFormat:@"%@/%@",
                                    [self applicationDocumentsDirectory],
                                    kAudioFilePath]];
-}
+}*/
 
 @end

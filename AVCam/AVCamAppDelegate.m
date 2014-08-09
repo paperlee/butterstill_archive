@@ -52,7 +52,7 @@
 @implementation AVCamAppDelegate
 
 -(BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions{
-    AVAudioSession *audioSession = [AVAudioSession sharedInstance];
+    /*AVAudioSession *audioSession = [AVAudioSession sharedInstance];
     NSError  *err = NULL;
     [audioSession setCategory:AVAudioSessionCategoryPlayAndRecord error:&err];
     
@@ -62,7 +62,7 @@
     [audioSession overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker error:NULL];
     if (err){
         NSLog(@"There was an error sending audio to speakers");
-    }
+    }*/
     
     return YES;
 }
