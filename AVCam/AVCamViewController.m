@@ -67,7 +67,6 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 @property (nonatomic, weak) IBOutlet UIButton *recordButton;
 @property (nonatomic, weak) IBOutlet UIButton *cameraButton;
 @property (nonatomic, weak) IBOutlet UIButton *stillButton;
-@property (weak, nonatomic) IBOutlet UIView *soundwaves;
 @property (weak, nonatomic) IBOutlet UIButton *replayButton;
 @property (weak, nonatomic) IBOutlet UIButton *retakeButton;
 
@@ -100,11 +99,39 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 @property (nonatomic, readonly, getter = isSessionRunningAndDeviceAuthorized) BOOL sessionRunningAndDeviceAuthorized;
 @property (nonatomic) BOOL lockInterfaceRotation;
 @property (nonatomic) id runtimeErrorHandlingObserver;
-@property (nonatomic) EZPlot *audioPlot;
+@property (nonatomic,strong) EZPlot *audioPlot;
 
 @end
 
 @implementation AVCamViewController
+
+#pragma mark - Initialization
+-(id)init {
+    self = [super init];
+    if(self){
+        [self initializeViewController];
+    }
+    
+    //pthread_mutex_init(&outputAudioFileLock, NULL);
+    
+    return self;
+}
+
+-(id)initWithCoder:(NSCoder *)aDecoder {
+    self = [super initWithCoder:aDecoder];
+    if(self){
+        [self initializeViewController];
+    }
+    return self;
+}
+
+#pragma mark - Initialize View Controller Here
+-(void)initializeViewController {
+    // Create an instance of the microphone and tell it to use this view controller instance as the delegate
+    //self.microphone = [EZMicrophone microphoneWithDelegate:self];
+    
+    
+}
 
 - (BOOL)isSessionRunningAndDeviceAuthorized
 {
@@ -133,6 +160,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     self.audioPlot.shouldMirror = YES;
     self.audioPlot.hidden = YES;
     self.audioPlot.gain = 3;
+    self.audioPlot.userInteractionEnabled = NO;
     
 	// Create the AVCaptureSession
 	AVCaptureSession *session = [[AVCaptureSession alloc] init];
@@ -214,7 +242,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     
     //UIView *soundwaves = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 102)];
     //[self.soundwaves setBackgroundColor:[UIColor clearColor]];
-    int RN[100];
+    /*int RN[100];
     for(int n = 0; n <= 100; n = n + 1){
         RN[n] = 20+rand()%80;
         NSLog(@"height is %i, %d",RN[n],rand()/RAND_MAX);
@@ -222,7 +250,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
         [tempbar setBackgroundColor:[UIColor colorWithRed:1.0f green:0.2f blue:0.1f alpha:0.6f]];
         [self.soundwaves addSubview:tempbar];
         
-    }
+    }*/
     //[self.soundWaveView addSubview:soundwaves];
 }
 
@@ -429,7 +457,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 - (IBAction)snapStillImage:(id)sender
 {
     
-    [self.soundWaveView setHidden:NO];
+    //[self.soundWaveView setHidden:NO];
     
     [self.microphone startFetchingAudio];
     
@@ -445,8 +473,20 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     self.audioPlot.hidden = YES;
     self.audioPlot.gain = 3;
     [self.audioPlot setHidden:NO];
+    self.audioPlot.userInteractionEnabled = NO;
+    
+    if (self.audioPlayer){
+        if (self.audioPlayer.playing){
+            [self.audioPlayer stop];
+        }
+        self.audioPlayer = nil;
+    }
     
     
+    // Record sound
+    self.recorder = [EZRecorder recorderWithDestinationURL:[self audioFilePathURL] sourceFormat:self.microphone.audioStreamBasicDescription destinationFileType:EZRecorderFileTypeM4A];
+    
+    self.isRecording = YES;
     
 	dispatch_async([self sessionQueue], ^{
 		// Update the orientation on the still image output video connection before capturing.
@@ -460,16 +500,14 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 			
 			if (imageDataSampleBuffer)
 			{
+                NSLog(@"save image");
 				NSData *imageData = [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:imageDataSampleBuffer];
 				UIImage *image = [[UIImage alloc] initWithData:imageData];
 				[[[ALAssetsLibrary alloc] init] writeImageToSavedPhotosAlbum:[image CGImage] orientation:(ALAssetOrientation)[image imageOrientation] completionBlock:nil];
                 [self.holdImage setHidden:NO];
                 [self.holdImage setImage:image];
+                NSLog(@"save image done");
                 
-                // Record sound after taking picture
-                self.recorder = [EZRecorder recorderWithDestinationURL:[self audioFilePathURL] sourceFormat:self.microphone.audioStreamBasicDescription destinationFileType:EZRecorderFileTypeM4A];
-                
-                self.isRecording = YES;
                 
                 /*[UIView animateWithDuration:30.0 delay:0.0 options:UIViewAnimationOptionCurveLinear animations:^{
                     self.soundwaves.frame = CGRectMake(22*100, self.soundwaves.frame.origin.y, self.soundwaves.frame.size.width, self.soundwaves.frame.size.height);
@@ -492,16 +530,18 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 
 - (IBAction)snapStillImageEnd:(id)sender
 {
+    NSLog(@"End taking image");
     
-    [self.soundWaveView setHidden:YES];
-    [self.audioPlot setHidden:YES];
-    [self.soundwaves setFrame:CGRectMake(0, self.soundwaves.frame.origin.y, self.soundwaves.frame.size.width, self.soundwaves.frame.size.height)];
+    //[self.soundWaveView setHidden:YES];
+    //[self.audioPlot setHidden:YES];
+    //[self.soundwaves setFrame:CGRectMake(0, self.soundwaves.frame.origin.y, self.soundwaves.frame.size.width, self.soundwaves.frame.size.height)];
     //[self.holdImage setHidden:YES];
     
     [self.stillButton setHidden:YES];
     [self.retakeButton setHidden:NO];
     
     if (self.recorder && self.isRecording){
+        NSLog(@"Closing the audio file");
         [self.recorder closeAudioFile];
     }
     
@@ -548,10 +588,25 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 
 - (IBAction)reTake:(UIButton *)sender {
     [self.holdImage setHidden:YES];
-    if (self.audioPlayer && self.audioPlayer.isPlaying){
-        [self.audioPlayer stop];
+    [self.audioPlot setHidden:YES];
+    
+    NSError *error = nil;
+    [[NSFileManager defaultManager] removeItemAtURL:[self audioFilePathURL] error:&error];
+    
+    if (self.audioPlayer){
+        if (self.audioPlayer.isPlaying){
+            [self.audioPlayer stop];
+        }
+        self.audioPlayer = nil;
     }
-    self.audioPlayer = nil;
+    
+    if (self.audioPlot){
+        self.audioPlot = nil;
+    }
+    
+    if (self.recorder){
+        self.recorder = nil;
+    }
     
     [self.retakeButton setHidden:YES];
     [self.stillButton setHidden:NO];
