@@ -258,7 +258,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     //[self.soundWaveView addSubview:soundwaves];
     
     //Set the audio file
-    NSArray *pathComponents = [NSArray arrayWithObjects:[NSSearchPathForDirectoriesInDomains(NSDocumentationDirectory, NSUserDomainMask, YES) lastObject], kAudioFilePath, nil];
+    NSArray *pathComponents = [NSArray arrayWithObjects:[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject], kAudioFilePath, nil];
     
     NSURL *outputFileURL = [NSURL fileURLWithPathComponents:pathComponents];
     
