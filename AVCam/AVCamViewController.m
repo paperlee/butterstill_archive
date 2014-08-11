@@ -52,18 +52,11 @@
 
 #import "AVCamPreviewView.h"
 
-#import "EZMicrophone.h"
-#import "EZAudioPlot.h"
-#import "EZRecorder.h"
-
 static void * CapturingStillImageContext = &CapturingStillImageContext;
 static void * RecordingContext = &RecordingContext;
 static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDeviceAuthorizedContext;
 
-@interface AVCamViewController () <AVCaptureFileOutputRecordingDelegate, AVAudioPlayerDelegate, AVAudioRecorderDelegate>{
-    AVAudioRecorder *audioRecorder;
-    AVAudioPlayer *audioPlayer;
-}
+@interface AVCamViewController ()
 
 // For use in the storyboards.
 @property (nonatomic, weak) IBOutlet AVCamPreviewView *previewView;
@@ -128,7 +121,8 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 #pragma mark - Initialize View Controller Here
 -(void)initializeViewController {
     // Create an instance of the microphone and tell it to use this view controller instance as the delegate
-    //self.microphone = [EZMicrophone microphoneWithDelegate:self];
+    NSLog(@"init microphone");
+    self.microphone = [EZMicrophone microphoneWithDelegate:self];
     
     
 }
@@ -147,9 +141,9 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 {
 	[super viewDidLoad];
 	
-    /*self.microphone = [EZMicrophone microphoneWithDelegate:self];
+    //self.microphone = [EZMicrophone microphoneWithDelegate:self];
     
-    self.audioPlot = [[EZAudioPlot alloc] initWithFrame:self.soundWaveView.frame];
+    self.audioPlot = [[EZAudioPlot alloc] initWithFrame:self.soundWavesView.frame];
     self.audioPlot.clipsToBounds = NO;
     [self.view addSubview:self.audioPlot];
     self.audioPlot.opaque = NO;
@@ -160,7 +154,7 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     self.audioPlot.shouldMirror = YES;
     self.audioPlot.hidden = YES;
     self.audioPlot.gain = 3;
-    self.audioPlot.userInteractionEnabled = NO;*/
+    self.audioPlot.userInteractionEnabled = NO;
     
     
     
@@ -494,9 +488,9 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     
     //[self.soundWaveView setHidden:NO];
     
-    /*[self.microphone startFetchingAudio];
+    [self.microphone startFetchingAudio];
     
-    self.audioPlot = [[EZAudioPlot alloc] initWithFrame:self.soundWaveView.frame];
+    self.audioPlot = [[EZAudioPlot alloc] initWithFrame:self.soundWavesView.frame];
     self.audioPlot.clipsToBounds = NO;
     [self.view addSubview:self.audioPlot];
     self.audioPlot.opaque = NO;
@@ -510,18 +504,18 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     [self.audioPlot setHidden:NO];
     self.audioPlot.userInteractionEnabled = NO;
     
-    if (self.audioPlayer){
+    /*if (self.audioPlayer){
         if (self.audioPlayer.playing){
             [self.audioPlayer stop];
         }
         self.audioPlayer = nil;
-    }
+    }*/
     
     
     // Record sound
-    self.recorder = [EZRecorder recorderWithDestinationURL:[self audioFilePathURL] sourceFormat:self.microphone.audioStreamBasicDescription destinationFileType:EZRecorderFileTypeM4A];
+    //self.recorder = [EZRecorder recorderWithDestinationURL:[self audioFilePathURL] sourceFormat:self.microphone.audioStreamBasicDescription destinationFileType:EZRecorderFileTypeM4A];
     
-    self.isRecording = YES;*/
+    //self.isRecording = YES;*/
     
     if (audioPlayer.playing){
         [audioPlayer stop];
@@ -602,6 +596,12 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     [self.stillButton setHidden:YES];
     [self.retakeButton setHidden:NO];
     [self.replayButton setEnabled:YES];
+    [self.saveButton setHidden:NO];
+    
+    // Stop microphone
+    [self.microphone stopFetchingAudio];
+    
+    //[self.audioPlot setHidden:YES];
     
     /*if (self.recorder && self.isRecording){
         NSLog(@"Closing the audio file");
@@ -657,6 +657,10 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 
 - (IBAction)reTake:(UIButton *)sender {
     [self.holdImage setHidden:YES];
+    if (self.audioPlot){
+        [self.audioPlot setHidden:YES];
+        self.audioPlot = nil;
+    }
     /*[self.audioPlot setHidden:YES];
     
     NSError *error = nil;
@@ -678,8 +682,10 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
     }*/
     
     [self.retakeButton setHidden:YES];
+    [self.replayButton setEnabled:NO];
     [self.stillButton setHidden:NO];
     [self.replayButton setEnabled:NO];
+    [self.saveButton setHidden:YES];
     
 }
 
@@ -784,13 +790,13 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
 	return captureDevice;
 }
 
-/*-(void) microphone:(EZMicrophone *)microphone hasAudioReceived:(float **)buffer withBufferSize:(UInt32)bufferSize withNumberOfChannels:(UInt32)numberOfChannels {
+-(void) microphone:(EZMicrophone *)microphone hasAudioReceived:(float **)buffer withBufferSize:(UInt32)bufferSize withNumberOfChannels:(UInt32)numberOfChannels {
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.audioPlot updateBuffer:buffer[0] withBufferSize:bufferSize];
     });
 }
 
--(void)microphone:(EZMicrophone *)microphone hasBufferList:(AudioBufferList *)bufferList withBufferSize:(UInt32)bufferSize withNumberOfChannels:(UInt32)numberOfChannels{
+/*-(void)microphone:(EZMicrophone *)microphone hasBufferList:(AudioBufferList *)bufferList withBufferSize:(UInt32)bufferSize withNumberOfChannels:(UInt32)numberOfChannels{
     if ( self.isRecording ){
         [self.recorder appendDataFromBufferList:bufferList withBufferSize:bufferSize];
     }
@@ -871,4 +877,9 @@ static void * SessionRunningAndDeviceAuthorizedContext = &SessionRunningAndDevic
                                    kAudioFilePath]];
 }*/
 
+
+- (IBAction)saveAction:(UIButton *)sender {
+    // User saves the butterstill image+audio
+    
+}
 @end

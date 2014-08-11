@@ -46,13 +46,28 @@
  */
 
 #import <UIKit/UIKit.h>
+#import <AVFoundation/AVFoundation.h>
+#import "EZAudio.h"
 
 #define kAudioFilePath @"EZAudioTest.m4a"
 
-@interface AVCamViewController : UIViewController
+@interface AVCamViewController : UIViewController<AVCaptureFileOutputRecordingDelegate, AVAudioPlayerDelegate, AVAudioRecorderDelegate, EZMicrophoneDelegate>{
+    AVAudioRecorder *audioRecorder;
+    AVAudioPlayer *audioPlayer;
+}
+
+@property (nonatomic,strong) EZMicrophone *microphone;
+
+
 @property (weak, nonatomic) IBOutlet UIImageView *holdImage;
-@property (weak, nonatomic) IBOutlet UIView *soundWaveView;
+@property (weak, nonatomic) IBOutlet UIView *soundWavesView;
+@property (weak, nonatomic) IBOutlet UIButton *saveButton;
 
 @property (nonatomic,assign) BOOL isRecording;
+
+@property (nonatomic,strong) EZAudioPlot *audioPlot;
+
+- (IBAction)saveAction:(UIButton *)sender;
+
 
 @end
